@@ -1,0 +1,24 @@
+:root {
+}
+
+body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+}
+
+.tile {
+    width: 4rem;
+    height: 4rem;
+    border: 1px solid white;
+    display: grid;
+    place-items: center;
+    position: absolute;
+}
+
+.board {
+    position: relative;
+    width: calc(4rem * 4);
+    height: calc(4rem * 4);
+    border: 5px solid white;
+}

@@ -13,9 +13,15 @@ const startMap = new Map<string, Tile>();
 const first = uid();
 startMap.set(first, { value: 2, col: 1, row: 1 });
 
-const createBoard = () => Array.from(["", "", "", ""], () => ["", "", "", ""]);
-const board = createBoard();
-board[1][1] = first;
+// const createBoard = () => Array.from(["", "", "", ""], () => ["", "", "", ""]);
+// const board = createBoard();
+// board[1][1] = first;
+
+function createBoard(map: Map<string, Tile>) {
+  const board = Array.from({ length: 4 }, () => ["", "", "", ""]);
+  map.forEach((tile, id) => (board[tile.row][tile.col] = id));
+  return board;
+}
 
 const mergeList: string[][] = [];
 
@@ -26,6 +32,7 @@ export default function Board() {
     prevTileMap: Map<string, Tile>,
     direction: "left" | "right",
   ) {
+    const board = createBoard(prevTileMap);
     const size = board.length;
     const nextTileMap = new Map(prevTileMap);
 
@@ -86,55 +93,11 @@ export default function Board() {
           const nextTileMap = moveTiles(prev, "right");
           return nextTileMap;
         });
-
-        // const changedTiles = new Map();
-        // for (let row = 0; row < board.length; row++) {
-        //   for (let col = board.length - 2; col >= 0; col--) {
-        //     if (board[row][col]) {
-        //       console.log("found at: ", row, col);
-        //       // clac new position
-        //       let newCol = col;
-        //       while (newCol + 1 < board.length) {
-        //         if (board[row][newCol + 1] === "") {
-        //           newCol++;
-        //           continue;
-        //         }
-        //         const tileA = tileMap.get(board[row][col]);
-        //         const tileB = tileMap.get(board[row][newCol + 1]);
-        //         if (tileA?.value === tileB?.value) {
-        //           newCol++;
-        //           mergeList.push([board[row][col], board[row][newCol]]);
-        //         }
-        //         break;
-        //       }
-        //       // update board
-        //       const temp = board[row][col];
-        //       board[row][col] = "";
-        //       board[row][newCol] = temp;
-        //       // update map
-        //       changedTiles.set(temp, [row, newCol]);
-        //     }
-        //   }
-        // }
-        // setTileMap((prev) => {
-        //   const nextTileMap = new Map(prev);
-        //   for (const [id, pos] of changedTiles) {
-        //     nextTileMap.set(id, { ...prev.get(id)!, col: pos[1] });
-        //   }
-        //   return nextTileMap;
-        // });
       } else if (event.key == "a") {
         setTileMap((prev) => {
           const nextTileMap = moveTiles(prev, "left");
           return nextTileMap;
         });
-        // setTileMap((prev) => {
-        //   const nextTileMap = new Map<string, Tile>();
-        //   for (const [key, value] of prev) {
-        //     nextTileMap.set(key, { ...value, col: value.col - 1 });
-        //   }
-        //   return nextTileMap;
-        // });
       }
     }
     document.addEventListener("keydown", handleKeyPress);

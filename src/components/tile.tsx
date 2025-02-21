@@ -1,7 +1,21 @@
-export default function Tile({ n, x, y }: { n: number; x: number; y: number }) {
+export default function Tile({
+  value,
+  col,
+  row,
+}: {
+  value: number;
+  col: number;
+  row: number;
+}) {
+  const TileSize = 64;
   return (
-    <div className="tile" style={{ left: `${x * 64}px`, top: `${y * 64}px` }}>
-      {n}
+    <div
+      className="tile"
+      style={{
+        transform: `translate(${col * TileSize}px, ${row * TileSize}px)`,
+      }}
+    >
+      {value}
     </div>
   );
 }

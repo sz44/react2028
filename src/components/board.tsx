@@ -1,74 +1,78 @@
 import { useState, useEffect, KeyboardEvent } from "react";
-import Tile from "./tile";
-function createBoard() {
-  // let board = Array(4).fill(0).map(() => [0, 0, 0, 0]);
-  const board = Array.from([0, 0, 0, 0], () => [0, 0, 0, 0]);
-  board[1][1] = 1;
-  return board;
-}
+import TileComponent from "./tile";
 
-function copyBoard(board: number[][]) {
-  const copy = createBoard();
-  for (let row = 0; row < board.length; row++) {
-    for (let col = 0; col < board.length; col++) {
-      copy[row][col] = board[row][col];
-    }
-  }
-  return copy;
-}
+type Tile = {
+  value: number;
+  col: number;
+  row: number;
+};
+
+const uid = () => Date.now().toString(36);
+
+const startMap = new Map<string, Tile>();
+const first = uid();
+startMap.set(first, { value: 2, col: 1, row: 1 });
+
+const createBoard = () => Array.from(["", "", "", ""], () => ["", "", "", ""]);
+const board = createBoard();
+board[1][1] = first;
+
+const mergeList: string[][] = [];
 
 export default function Board() {
-  const [pos, setPos] = useState([0, 0]);
-  const [board, setBoard] = useState(createBoard());
-
-  function moveRight() {
-    console.log("starting move right...");
-    let nextBoard = copyBoard(board);
-    for (let row = 0; row < board.length; row++) {
-      for (let col = board.length - 1; col >= 0; col--) {
-        if (board[row][col]) {
-          console.log("found at: ", row, col);
-          let newCol = col + 1;
-          // while can move right
-          while (newCol < board.length - 1 && nextBoard[row][newCol] == 0) {
-            newCol++;
-          }
-          console.log(" moveing to : ", row, newCol);
-          nextBoard[row][newCol] = nextBoard[row][col];
-          nextBoard[row][col] = 0;
-        }
-      }
-    }
-    setBoard(nextBoard);
-  }
-
-  function moveLeft() {
-    console.log("starting move left...");
-    let nextBoard = copyBoard(board);
-    for (let row = 0; row < board.length; row++) {
-      for (let col = 0; col < board.length; col++) {
-        if (board[row][col]) {
-          console.log("found at: ", row, col);
-          let newCol = col - 1;
-          // while can move right
-          while (newCol > 0 && nextBoard[row][newCol] == 0) {
-            newCol--;
-          }
-          console.log(" moveing to : ", row, newCol);
-          nextBoard[row][newCol] = nextBoard[row][col];
-          nextBoard[row][col] = 0;
-        }
-      }
-    }
-    setBoard(nextBoard);
-  }
+  const [tileMap, setTileMap] = useState<Map<string, Tile>>(startMap);
 
   useEffect(() => {
     function handleKeyPress(event: KeyboardEvent) {
       if (event.key == "d") {
-        moveRight();
+        const nextTileMap = new Map(tileMap);
+        for (let row = 0; row < board.length; row++) {
+          for (let col = board.length - 2; col >= 0; col--) {
+            if (board[row][col]) {
+              console.log("found at: ", row, col);
+              // clac new position
+              let newCol = col + 1;
+              while (newCol < board.length) {
+                if (board[row][newCol] === "") {
+                  newCol++;
+                  continue;
+                }
+                const tileA = tileMap.get(board[row][col]);
+                const tileB = tileMap.get(board[row][newCol]);
+                if (tileA?.value === tileB?.value) {
+                  mergeList.push([board[row][col], board[row][newCol]]);
+                  newCol++;
+                }
+                break;
+              }
+              // update board
+              const temp = board[row][col];
+              board[row][col] = "";
+              board[row][newCol] = temp;
+              console.log(" moving to : ", row, newCol);
+              // update map
+              const prev = nextTileMap.get(temp)!;
+              nextTileMap.set(temp, { ...prev, col: newCol });
+            }
+          }
+        }
+        setTileMap(nextTileMap);
+        // setTileMap((prev) => {
+        //   const nextTileMap = new Map<string, Tile>();
+        //   for (const [id, tile] of prev) {
+        //     const nextValue = { ...tile, col: tile.col + 1 };
+        //     nextTileMap.set(id, nextValue);
+        //   }
+        //   return nextTileMap;
+        // });
       } else if (event.key == "a") {
-        moveLeft();
+        setTileMap((prev) => {
+          const nextTileMap = new Map<string, Tile>();
+          for (const [key, value] of prev) {
+            nextTileMap.set(key, { ...value, col: value.col - 1 });
+          }
+          return nextTileMap;
+        });
       }
     }
     document.addEventListener("keydown", handleKeyPress);
@@ -80,10 +84,9 @@ export default function Board() {
 
   return (
     <div className="board">
-      {board.map((row, r) =>
-        row.map((cell, c) => <Tile key={`${r}${c}`} n={cell} x={c} y={r} />),
-      )}
-      {/* <Tile x={pos[0]} y={pos[1]} /> */}
+      {[...tileMap.entries()].map(([id, tile]) => (
+        <TileComponent key={id} {...tile} />
+      ))}
     </div>
   );
 }

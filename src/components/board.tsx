@@ -13,28 +13,65 @@ const startMap = new Map<string, Tile>();
 const first = uid();
 startMap.set(first, { value: 2, col: 1, row: 1 });
 
-// const createBoard = () => Array.from(["", "", "", ""], () => ["", "", "", ""]);
-// const board = createBoard();
-// board[1][1] = first;
-
 function createBoard(map: Map<string, Tile>) {
   const board = Array.from({ length: 4 }, () => ["", "", "", ""]);
   map.forEach((tile, id) => (board[tile.row][tile.col] = id));
   return board;
 }
 
-const mergeList: string[][] = [];
+function getMergeList(map: Map<string, Tile>) {
+  const mergeList: string[][] = [];
+  const seen: string[] = [];
+  map.forEach((tile, id) => {
+    const ind = tile.row * 4 + tile.col;
+    if (seen[ind]) {
+      mergeList.push([seen[ind], id]);
+    } else {
+      seen[ind] = id;
+    }
+  });
+  return mergeList;
+}
 
 export default function Board() {
   const [tileMap, setTileMap] = useState<Map<string, Tile>>(startMap);
+  // const [isMoving, setIsMoving] = useState(false);
+  // const [mergeList, setMergeList] = useState([]);
+
+  function mergeAndAdd(prevTileMap: Map<string, Tile>) {
+    const nextTileMap = new Map(prevTileMap);
+    const mergeList = getMergeList(prevTileMap);
+    mergeList.forEach((pair) => {
+      nextTileMap.delete(pair[0]);
+      const obj = prevTileMap.get(pair[1])!;
+      nextTileMap.set(pair[1], {
+        value: obj.value * 2,
+        row: obj.row,
+        col: obj.col,
+      });
+    });
+
+    // add new tile
+    const board = createBoard(prevTileMap);
+    let rr = Math.floor(Math.random() * 4);
+    let rc = Math.floor(Math.random() * 4);
+    while (board[rr][rc] != "") {
+      rr = Math.floor(Math.random() * 4);
+      rc = Math.floor(Math.random() * 4);
+    }
+    nextTileMap.set(uid(), { value: 2, row: rr, col: rc });
+
+    return nextTileMap;
+  }
 
   function moveTiles(
     prevTileMap: Map<string, Tile>,
-    direction: "left" | "right",
+    direction: "left" | "right" | "up" | "down",
   ) {
     const board = createBoard(prevTileMap);
     const size = board.length;
     const nextTileMap = new Map(prevTileMap);
+    const nextMergeList = [];
 
     function traverse(r: number, c: number, dr: number, dc: number) {
       const id = board[r][c];
@@ -53,7 +90,7 @@ export default function Board() {
           if (prevTileMap.get(id)?.value === prevTileMap.get(nid)?.value) {
             nr = nextR;
             nc = nextC;
-            mergeList.push([id, nid]);
+            nextMergeList.push([id, nid]);
           }
           break;
         }
@@ -75,11 +112,22 @@ export default function Board() {
           traverse(row, col, 0, 1);
         }
       }
-    }
-    if (direction === "left") {
+    } else if (direction === "left") {
       for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
           traverse(row, col, 0, -1);
+        }
+      }
+    } else if (direction === "up") {
+      for (let col = 0; col < size; col++) {
+        for (let row = 0; row < size; row++) {
+          traverse(row, col, -1, 0);
+        }
+      }
+    } else if (direction === "down") {
+      for (let col = 0; col < size; col++) {
+        for (let row = size - 2; row >= 0; row--) {
+          traverse(row, col, 1, 0);
         }
       }
     }
@@ -87,21 +135,49 @@ export default function Board() {
   }
 
   useEffect(() => {
+    let isMoving = false;
     function handleKeyPress(event: KeyboardEvent) {
-      if (event.key == "d") {
+      if (isMoving) {
+        console.log("isMoving");
+        return;
+      }
+      if (event.key === "d") {
         setTileMap((prev) => {
           const nextTileMap = moveTiles(prev, "right");
           return nextTileMap;
         });
-      } else if (event.key == "a") {
+      } else if (event.key === "a") {
         setTileMap((prev) => {
           const nextTileMap = moveTiles(prev, "left");
           return nextTileMap;
         });
+      } else if (event.key === "w") {
+        setTileMap((prev) => {
+          const nextTileMap = moveTiles(prev, "up");
+          return nextTileMap;
+        });
+      } else if (event.key === "s") {
+        setTileMap((prev) => {
+          const nextTileMap = moveTiles(prev, "down");
+          return nextTileMap;
+        });
+      }
+      if (["s", "w", "a", "d"].includes(event.key)) {
+        isMoving = true;
+        setTimeout(() => {
+          // AddNewTile(nextTileMap);
+          // setIsMoving(false);
+          isMoving = false;
+          setTileMap((prev) => {
+            console.log("do merge and add new");
+            return mergeAndAdd(prev);
+          });
+          // setMergeList(nextMergeList)
+        }, 200);
       }
     }
-    document.addEventListener("keydown", handleKeyPress);
 
+    document.addEventListener("keydown", handleKeyPress);
     return () => {
       document.removeEventListener("keydown", handleKeyPress);
     };
